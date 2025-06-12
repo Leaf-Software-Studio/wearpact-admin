@@ -1,0 +1,21 @@
+# docker-compose.local.yml  – Mongo-only for local dev
+# ----------------------------------------------------
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: wearpact-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017' # → localhost:27017
+    environment:
+      # Pre-create a DB called "wearpact"; omit if you don't care
+      MONGO_INITDB_DATABASE: wearpact
+    command: ['--storageEngine=wiredTiger']
+    volumes:
+      - mongo_data:/data/db
+    logging:
+      driver: 'none' # silence the verbose mongod output
+
+volumes:
+  mongo_data:

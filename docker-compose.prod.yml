@@ -1,0 +1,28 @@
+# docker-compose.prod.yml — Payload CMS → AWS DocumentDB (TLS)
+
+services:
+  payload:
+    build:
+      context: .
+      dockerfile: Dockerfile # multi-stage file
+      target: runner # copy only runtime stage
+    image: wearpact-admin:prod
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      DOCDB_USER: ${DOCDB_USER} # injected from .env.prod
+      DOCDB_PASSWORD: ${DOCDB_PASSWORD} # "
+      DOCDB_HOST: my-cluster.cluster-abcdefghijkl.us-east-1.docdb.amazonaws.com
+      DOCDB_PORT: 27017
+      DOCDB_DB: wearpact
+      # build the full URI with creds & TLS flags
+      MONGODB_URI: >
+        mongodb://${DOCDB_USER}:${DOCDB_PASSWORD}@${DOCDB_HOST}:${DOCDB_PORT}/${DOCDB_DB}?tls=true&retryWrites=false&tlsCAFile=/etc/aws-docdb-ca/rds-combined-ca-bundle.pem
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      PAYLOAD_PUBLIC_SERVER_URL: https://cms.example.com
+      NODE_EXTRA_CA_CERTS: /etc/aws-docdb-ca/rds-combined-ca-bundle.pem
+    volumes:
+      # mount the CA bundle read-only inside the container
+      - ./certs/rds-combined-ca-bundle.pem:/etc/aws-docdb-ca/rds-combined-ca-bundle.pem:ro

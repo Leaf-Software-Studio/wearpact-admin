@@ -1,43 +1,43 @@
-version: '3'
-
 services:
+  # ────────── Payload CMS (dev) ──────────
   payload:
-    image: node:18-alpine
+    image: node:20-alpine # stay up to date
+    working_dir: /home/node/app
     ports:
       - '3000:3000'
     volumes:
-      - .:/home/node/app
+      - .:/home/node/app # live code mount
       - node_modules:/home/node/app/node_modules
-    working_dir: /home/node/app/
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm dev"
+    command: >
+      sh -c "
+        corepack enable && \
+        corepack prepare pnpm@9.1.2 --activate && \
+        pnpm install && \
+        pnpm dev
+      "
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/wearpact
+      PAYLOAD_SECRET: devsecret
     depends_on:
       - mongo
-      # - postgres
     env_file:
       - .env
 
-  # Ensure your DATABASE_URI uses 'mongo' as the hostname ie. mongodb://mongo/my-db-name
+  # ────────── MongoDB ──────────
   mongo:
-    image: mongo:latest
+    image: mongo:7
+    container_name: wearpact-mongo
+    restart: unless-stopped
     ports:
-      - '27017:27017'
-    command:
-      - --storageEngine=wiredTiger
+      - '27017:27017' # → localhost:27017
+    environment:
+      MONGO_INITDB_DATABASE: wearpact
+    command: ['--storageEngine=wiredTiger']
     volumes:
-      - data:/data/db
+      - mongo_data:/data/db
     logging:
-      driver: none
-
-  # Uncomment the following to use postgres
-  # postgres:
-  #   restart: always
-  #   image: postgres:latest
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
+      driver: 'none'
 
 volumes:
-  data:
-  # pgdata:
+  mongo_data: # <-- defined correctly now
   node_modules:
